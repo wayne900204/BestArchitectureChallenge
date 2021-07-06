@@ -15,7 +15,6 @@
 *.ipr
 *.iws
 .idea/
-
 # Visual Studio Code related
 .classpath
 .project

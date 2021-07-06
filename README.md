@@ -65,8 +65,68 @@ Tools • Dart 2.13.3
 - 可以根據選擇的內容來排序（範例是用id/title來排序）
 - 改造成你自己的 Best Architecture 🎉🎉🎉
 
+## 備註
+ - 此為參加 Flutter Best Architecture Challenge 活動的專案
+ - [My Github](https://github.com/wayne900204),
+ - 📫  Reach me  **wayne900204@gmail.com**
 
+## 架構
+MVVM
 
+![](https://github.com/wayne900204/BestArchitectureChallenge/blob/main/flutter_mvvm.png)
 
+這個架構是很類似於 MVVM 的
+ - View 是 Widget
+ - ViewModel 是 Provider 的 ChangeNotifier
+ - Repository 是用拿資料溝通的，
+ - 再來就是 Api 和 Local Database 的 classes 了
+之所以選擇使用它。是因為他的結構可以方便測試，並且分工明確
 
+## Library
 
+### http
+ - 這個主要是用來串接 API 的套件。簡單又快速
+ - [http package](https://pub.dev/packages/http)
+
+ - Http 有錯誤的 Log 訊息。如果想要自己客製化 Exception 或是需要一些特別的設定但 Http 沒有提供的話，你可以用用看 [Dio](https://pub.dev/packages/dio)
+ 
+ 但是我推薦使用 Http，簡單又方便，提供的功能應有盡有
+ 
+ ### Provider
+ 
+ #### 概念
+  - 基於 InheritedWidget 的套件
+ #### 作用
+ - 作為畫面和邏輯的溝通橋樑
+ - 控制畫面更新
+ - 拿到父親節點
+ - 方便把邏輯區分出來
+ - 共享資料
+
+ ## 整個 Project 的概念
+![](https://github.com/wayne900204/BestArchitectureChallenge/blob/main/project_structure.png)
+
+我在 MaterialApp 外面包了一個父親節點（ChangeNotifierProvider），並在 PostPage 裡面有一個 Widget 是 PopupMenuItem，另外裡面呼叫了一個 ListView 的 StatelessWidget Class。我在 PostPage 的 initState 裡面呼叫了
+```dart
+context.read<PostProvider>().fetchData(SortState.sortWithId);
+```
+並在 PopupMenuItem 裡面去做使用 id、userId、title、body 排序。
+```dart
+context.read<PostProvider>().fetchData(value);
+```
+接著，我們需要再 ListView 裡面知道資料更動了，而且我又不希望整個畫面更新，我只想更新 listView，因此我使用
+```dart
+context.select((PostProvider p) => p.posts);
+```
+來更新我的部分元件。
+
+## Unit Test
+### 測試項目
+ - 我的 state 的狀態是否是我要的
+ - 我的 api 成功回傳後是否是我要的型態。
+
+這邊我並沒有測試 compare 後是不是我要的結果，因為邏輯相對簡單，因此我就沒有寫測試了。
+
+### Library
+ - [mockito](https://pub.dev/packages/mockito) 他是用來塞入假資料的。
+ - [build_runner](https://pub.dev/packages/build_runner) 他是自動幫忙把 mockito 類似於 interface 的東西產生。

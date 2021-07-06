@@ -1,8 +1,8 @@
-import 'dart:convert';
-
+import 'package:best_architecture_challenge/post_provider.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
 void main() {
   runApp(MyApp());
@@ -11,12 +11,19 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'MyApp',
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<PostProvider>(
+          create: (context) => PostProvider(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'MyApp',
+        theme: ThemeData(
+          primarySwatch: Colors.deepPurple,
+        ),
+        home: PostPage(title: 'FlutterTaipei :)'),
       ),
-      home: PostPage(title: 'FlutterTaipei :)'),
     );
   }
 }
@@ -31,15 +38,10 @@ class PostPage extends StatefulWidget {
 }
 
 class _PostPageState extends State<PostPage> {
-  static const int _sortWithId = 1;
-  static const int _sortWithTitle = 2;
-
-  List<dynamic> _posts = [];
-
   @override
   void initState() {
+    context.read<PostProvider>().fetchData(SortState.sortWithId);
     super.initState();
-    _fetchData(_sortWithId);
   }
 
   @override
@@ -52,66 +54,67 @@ class _PostPageState extends State<PostPage> {
                 icon: Icon(Icons.more_vert),
                 itemBuilder: (context) => [
                       PopupMenuItem(
-                        child: Text('使用id排序'),
-                        value: _sortWithId,
+                        child: Text('使用 userId 排序'),
+                        value: SortState.sortWithUserId,
                       ),
                       PopupMenuItem(
-                        child: Text('使用title排序'),
-                        value: _sortWithTitle,
+                        child: Text('使用 id 排序'),
+                        value: SortState.sortWithId,
+                      ),
+                      PopupMenuItem(
+                        child: Text('使用 title 排序'),
+                        value: SortState.sortWithTitle,
+                      ),
+                      PopupMenuItem(
+                        child: Text('使用 body 排序'),
+                        value: SortState.sortWithBody,
                       )
                     ],
-                onSelected: (int value) {
-                  _fetchData(value);
+                onSelected: (SortState value) {
+                  context.read<PostProvider>().fetchData(value);
                 })
           ],
         ),
-        body: ListView.separated(
-          itemCount: _posts.length,
-          itemBuilder: (context, index) {
-            String id = _posts[index]['id'].toString();
-            String title = _posts[index]['title'].toString();
-            String body = _posts[index]['body'].toString();
-            return Container(
-                padding: EdgeInsets.all(8),
-                child: RichText(
-                  text: TextSpan(
-                    style: DefaultTextStyle.of(context).style,
-                    children: <TextSpan>[
-                      TextSpan(
-                        text: "$id. $title",
-                        style: TextStyle(fontSize: 18, color: Colors.red),
-                      ),
-                      TextSpan(
-                        text: '\n' + body,
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ));
-          },
-          separatorBuilder: (context, index) {
-            return Divider();
-          },
-        ));
+        body: MyListView());
   }
+}
 
-  void _fetchData(int sort) async {
-    var url = Uri.https('jsonplaceholder.typicode.com', '/posts');
-    var response = await http.get(url);
-    print("response=${response.body}");
-    List<dynamic> result = jsonDecode(response.body);
-    if (sort == _sortWithId) {
-      result.sort((a, b) {
-        return int.parse(a['id'].toString())
-            .compareTo(int.parse(b['id'].toString()));
-      });
-    } else if (sort == _sortWithTitle) {
-      result.sort((a, b) {
-        return a['title'].toString().compareTo(b['title'].toString());
-      });
-    }
-    setState(() {
-      _posts = result;
-    });
+class MyListView extends StatelessWidget {
+  const MyListView({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    var posts = context.select((PostProvider p) => p.posts);
+    return ListView.separated(
+      key: UniqueKey(),
+      itemCount: posts.length,
+      itemBuilder: (context, index) {
+        var post = posts[index];
+        return Container(
+            padding: EdgeInsets.all(8),
+            child: RichText(
+              text: TextSpan(
+                style: DefaultTextStyle.of(context).style,
+                children: <TextSpan>[
+                  TextSpan(
+                    text: post.id.toString() + ". " + post.title,
+                    style: TextStyle(fontSize: 18, color: Colors.red),
+                  ),
+                  TextSpan(
+                    text: '\n' + post.body,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(
+                    text: "\nUser ID：" + post.userId.toString(),
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ],
+              ),
+            ));
+      },
+      separatorBuilder: (context, index) {
+        return Divider();
+      },
+    );
   }
 }
